@@ -90,6 +90,8 @@ decode_call_payload(JSonStr) ->
     Error = s(JSON, error),
 %    ID = s(JSON, id),    % ignored for now
     if 
+        (Error == null) ->
+           {ok,{response,[Result]}}; 
         (Error =/= undefined) -> 
             {error, Error};
         true -> 
