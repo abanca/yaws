@@ -931,6 +931,7 @@ acceptor(GS) ->
     end.
 acceptor0(GS, Top) ->
     ?TC([{record, GS, gs}]),
+    put(gserv_pid, Top),
     put(gc, GS#gs.gconf),
     X = do_accept(GS),
     Top ! {self(), next, X},
@@ -1149,7 +1150,10 @@ init_db() ->
 
 erase_transients() ->
     %% flush all messages
+    %% If exit signal is received from the gserv process, rethrow it
+    Top = get(gserv_pid),
     Fun = fun(G) -> receive
+			{'EXIT', Top, Reason} -> exit(Reason);
                        _X -> G(G)
                     after 0 -> ok
                     end

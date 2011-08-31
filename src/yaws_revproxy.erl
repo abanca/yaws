@@ -231,10 +231,10 @@ ploop(From0, To, Pid) ->
            after 0 ->
                    From0
            end,
-    set_sock_mode(From),
+    SetOk = set_sock_mode(From),
     TS = To#psock.s,
-    case From#psock.mode of
-        expectheaders ->
+    case {SetOk, From#psock.mode} of
+        {ok, expectheaders} ->
             case yaws:http_get_headers(From#psock.s, get(ssl)) of
                 {R, H0} ->
                     ?Debug("R = ~p~n",[R]),
@@ -257,7 +257,7 @@ ploop(From0, To, Pid) ->
                 closed ->
                     done
             end;
-        expectchunked ->
+        {ok, expectchunked} ->
             %% read the chunk number, we're in line mode
             N = yaws:get_chunk_num(From#psock.s, get(ssl)),
             if N == 0 ->
@@ -270,7 +270,7 @@ ploop(From0, To, Pid) ->
                     ploop(From#psock{mode = chunk, 
                                     state = N},To, Pid)
             end;
-        chunk ->
+        {ok, chunk} ->
             CG = yaws:get_chunk(From#psock.s,From#psock.state, 0, get(ssl)),
             SZ = From#psock.state,
             Data2 = [yaws:integer_to_hex(SZ),"\r\n", CG, "\r\n"],
@@ -278,10 +278,10 @@ ploop(From0, To, Pid) ->
             ok = yaws:eat_crnl(From#psock.s, get(ssl)),
             ploop(From#psock{mode = expectchunked,
                              state = undefined}, To, Pid);
-        len when From#psock.state == 0 ->
+        {ok, len} when From#psock.state == 0 ->
             ploop_keepalive(From#psock{mode = expectheaders,
                              state = undefined},To, Pid);
-        len ->
+        {ok, len} ->
             case yaws:do_recv(From#psock.s, From#psock.state, get(ssl)) of
                 {ok, Bin} ->
                     SZ = size(Bin),
@@ -293,14 +293,18 @@ ploop(From0, To, Pid) ->
                     ?Debug("Failed to read :~p~n", [_Rsn]),  
                     exit(normal)
             end;
-        undefined ->
+        {ok, undefined} ->
             case yaws:do_recv(From#psock.s, From#psock.state, get(ssl)) of
                 {ok, Bin} ->
                     yaws:gen_tcp_send(TS, Bin),
                     ploop(From, To, Pid);
                 _ ->
                     exit(normal)
-            end
+            end;
+        Error ->
+            io:format("Trapped error from: ~p connection [~p]~n",
+                [From, Error]),
+            exit(normal)
     end.
 
 %% Before reentering the ploop in expect_header mode (new request/reply),
