@@ -235,6 +235,9 @@ ploop(From0, To, Pid) ->
     TS = To#psock.s,
     case {SetOk, From#psock.mode} of
         {ok, expectheaders} ->
+		try
+
+
             case yaws:http_get_headers(From#psock.s, get(ssl)) of
                 {R, H0} ->
                     ?Debug("R = ~p~n",[R]),
@@ -256,7 +259,12 @@ ploop(From0, To, Pid) ->
                     ploop(From2, To, Pid);
                 closed ->
                     done
-            end;
+            end
+       catch 
+		NCGError:NCGValue -> 
+			error_logger:info_msg("Error de REV_PROXY ~p:~p  Stacktrace [~p]",[NCGError,NCGValue, erlang:get_stack_trace()]),
+			exit(normal)
+       end;
         {ok, expectchunked} ->
             %% read the chunk number, we're in line mode
             N = yaws:get_chunk_num(From#psock.s, get(ssl)),
