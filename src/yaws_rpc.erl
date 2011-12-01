@@ -113,7 +113,12 @@ handle_payload(Args, Handler, Type) -> % {{{
     % haXe parameters are URL encoded
     {Payload,DecodedStr} = 
 	case RpcType of
-	    T when T==haxe; T==json ->
+        %Parche : 2011-12-01
+        %Autor  : Juan A. Berrayarza
+        %Eliminamos T==json de la condicion
+        %para que no realice el url_decode de json ya
+        %que no es necesario decodificar el payload en json
+	    T when T==haxe ->
 		PL = binary_to_list(Args#arg.clidata),
 		%%    ?Debug("rpc plaintext call ~p ~n", [PL]),
 		{PL, yaws_api:url_decode(PL)};
