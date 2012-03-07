@@ -1,4 +1,4 @@
-%% Copyright (C) 2003 Joakim Grebenö <jocke@gleipnir.com>.
+%% Copyright (C) 2003 Joakim Grebenï¿½ <jocke@gleipnir.com>.
 %% All rights reserved.
 %%
 %% Copyright (C) 2006 Gaspar Chilingarov <nm@web.am>
@@ -355,6 +355,7 @@ send(_Args, StatusCode, Payload, AddOnData, RpcType) ->
      {header, {content_length, lists:flatlength(Payload)}}] ++ AddOnData.
 
 content_hdr(json, Payload) -> {content, "application/json", Payload};
+content_hdr(soap, Payload) -> {content, "text/xml", Payload}; % .NET issues
 content_hdr(_, Payload)    -> {content, "application/xml", Payload}.
 %% FIXME  would like to add charset info here !!
 
